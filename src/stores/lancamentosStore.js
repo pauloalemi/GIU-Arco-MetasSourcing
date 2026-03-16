@@ -32,19 +32,20 @@ export const useLancamentosStore = defineStore('lancamentos', {
       }
     },
 
-    async save(date, projectId, projectName, triagem) {
+    async save(date, projectId, projectName, triagem, abordados) {
       const google = useGoogleStore()
       const auth = useAuthStore()
       this.saving = true
       this.error = null
       try {
-        await upsertLancamento(google.accessToken, auth.user.name, date, projectId, projectName, triagem)
+        await upsertLancamento(google.accessToken, auth.user.name, date, projectId, projectName, triagem, abordados)
         // Atualiza local
         const existing = this.lancamentos.find((l) => l.data === date && l.projectId === projectId)
         if (existing) {
           existing.triagem = triagem
+          existing.abordados = abordados
         } else {
-          this.lancamentos.push({ data: date, projectId, projectName, triagem })
+          this.lancamentos.push({ data: date, projectId, projectName, triagem, abordados })
         }
       } catch (e) {
         this.error = e.message

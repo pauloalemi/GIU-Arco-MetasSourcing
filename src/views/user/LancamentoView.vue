@@ -47,16 +47,19 @@
                 <span class="font-weight-medium">{{ project.name }}</span>
               </div>
 
-              <!-- Meta -->
-              <div v-if="getMeta(project.id)" class="mb-3">
-                <v-chip size="small" color="primary" variant="tonal">
+              <!-- Metas -->
+              <div v-if="getMeta(project.id)" class="d-flex flex-wrap gap-2 mb-3">
+                <v-chip v-if="getMeta(project.id).triagem" size="small" color="primary" variant="tonal">
                   Meta: {{ getMeta(project.id).triagem }} triagens / {{ cadenciaLabel(getMeta(project.id).cadencia) }}
+                </v-chip>
+                <v-chip v-if="getMeta(project.id).abordados" size="small" color="secondary" variant="tonal">
+                  Meta: {{ getMeta(project.id).abordados }} abordados / {{ cadenciaLabel(getMeta(project.id).cadencia) }}
                 </v-chip>
               </div>
 
-              <!-- Input -->
+              <!-- Inputs -->
               <v-text-field
-                v-model.number="form[project.id]"
+                v-model.number="form[project.id].triagem"
                 label="Triagens realizadas"
                 type="number"
                 min="0"
@@ -64,17 +67,42 @@
                 density="compact"
                 suffix="triagens"
                 hide-details
+                class="mb-3"
+              />
+              <v-text-field
+                v-model.number="form[project.id].abordados"
+                label="Abordados"
+                type="number"
+                min="0"
+                variant="outlined"
+                density="compact"
+                suffix="abordados"
+                hide-details
               />
 
-              <!-- Progresso -->
-              <div v-if="getMeta(project.id) && form[project.id] >= 0" class="mt-3">
+              <!-- Progresso triagens -->
+              <div v-if="getMeta(project.id)?.triagem && form[project.id].triagem >= 0" class="mt-3">
                 <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
-                  <span>Progresso</span>
-                  <span>{{ progressoPct(project.id) }}%</span>
+                  <span>Triagens</span>
+                  <span>{{ progressoPct(project.id, 'triagem') }}%</span>
                 </div>
                 <v-progress-linear
-                  :model-value="progressoPct(project.id)"
-                  :color="progressoColor(project.id)"
+                  :model-value="progressoPct(project.id, 'triagem')"
+                  :color="progressoColor(project.id, 'triagem')"
+                  rounded
+                  height="6"
+                />
+              </div>
+
+              <!-- Progresso abordados -->
+              <div v-if="getMeta(project.id)?.abordados && form[project.id].abordados >= 0" class="mt-2">
+                <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
+                  <span>Abordados</span>
+                  <span>{{ progressoPct(project.id, 'abordados') }}%</span>
+                </div>
+                <v-progress-linear
+                  :model-value="progressoPct(project.id, 'abordados')"
+                  :color="progressoColor(project.id, 'abordados')"
                   rounded
                   height="6"
                 />
@@ -87,7 +115,7 @@
                 variant="flat"
                 size="small"
                 :loading="saving[project.id]"
-                :disabled="form[project.id] === null || form[project.id] === undefined"
+                :disabled="form[project.id].triagem === null && form[project.id].abordados === null"
                 @click="salvar(project)"
               >
                 Salvar
@@ -141,14 +169,14 @@ function cadenciaLabel(c) {
   return c === 'diaria' ? 'dia' : 'semana'
 }
 
-function progressoPct(projectId) {
+function progressoPct(projectId, campo) {
   const meta = getMeta(projectId)
-  if (!meta || !meta.triagem) return 0
-  return Math.min(100, Math.round(((form[projectId] || 0) / meta.triagem) * 100))
+  if (!meta || !meta[campo]) return 0
+  return Math.min(100, Math.round(((form[projectId][campo] || 0) / meta[campo]) * 100))
 }
 
-function progressoColor(projectId) {
-  const pct = progressoPct(projectId)
+function progressoColor(projectId, campo) {
+  const pct = progressoPct(projectId, campo)
   if (pct >= 100) return 'success'
   if (pct >= 60) return 'warning'
   return 'error'
@@ -157,7 +185,10 @@ function progressoColor(projectId) {
 function preencherForm(date) {
   assignedProjects.value.forEach((p) => {
     const lancamento = store.lancamentos.find((l) => l.data === date && l.projectId === p.id)
-    form[p.id] = lancamento ? lancamento.triagem : null
+    form[p.id] = {
+      triagem: lancamento ? lancamento.triagem : null,
+      abordados: lancamento ? lancamento.abordados : null,
+    }
   })
 }
 
@@ -195,10 +226,11 @@ async function connect() {
 }
 
 async function salvar(project) {
-  if (form[project.id] === null || form[project.id] === undefined) return
+  const f = form[project.id]
+  if (f.triagem === null && f.abordados === null) return
   saving[project.id] = true
   try {
-    await store.save(selectedDate.value, project.id, project.name, form[project.id])
+    await store.save(selectedDate.value, project.id, project.name, f.triagem || 0, f.abordados || 0)
   } finally {
     saving[project.id] = false
   }
