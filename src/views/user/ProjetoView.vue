@@ -122,7 +122,7 @@
             color="primary"
             variant="flat"
             :loading="saving"
-            :disabled="form.triagem === null && form.abordados === null"
+            :disabled="normalizeEmpty(form.triagem) === null && normalizeEmpty(form.abordados) === null"
             @click="salvar"
           >
             Salvar
@@ -160,9 +160,13 @@ const saving = ref(false)
 const form = reactive({ triagem: null, abordados: null })
 const savedValues = ref({ triagem: null, abordados: null })
 
+function normalizeEmpty(v) {
+  return v === '' || v === undefined ? null : v
+}
+
 const isDirty = computed(() =>
-  form.triagem !== savedValues.value.triagem ||
-  form.abordados !== savedValues.value.abordados
+  normalizeEmpty(form.triagem) !== savedValues.value.triagem ||
+  normalizeEmpty(form.abordados) !== savedValues.value.abordados
 )
 
 const loading = computed(() => projectsStore.loading || metasStore.loading || lancamentosStore.loading)
@@ -228,11 +232,13 @@ onMounted(async () => {
 })
 
 async function salvar() {
-  if (!project.value || (form.triagem === null && form.abordados === null)) return
+  const triagem = normalizeEmpty(form.triagem)
+  const abordados = normalizeEmpty(form.abordados)
+  if (!project.value || (triagem === null && abordados === null)) return
   saving.value = true
   try {
-    await lancamentosStore.save(lancamentosStore.selectedDate, project.value.id, project.value.name, form.triagem || 0, form.abordados || 0)
-    savedValues.value = { triagem: form.triagem, abordados: form.abordados }
+    await lancamentosStore.save(lancamentosStore.selectedDate, project.value.id, project.value.name, triagem, abordados)
+    savedValues.value = { triagem, abordados }
   } finally {
     saving.value = false
   }

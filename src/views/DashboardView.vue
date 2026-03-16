@@ -234,7 +234,7 @@ function isFilledForDate(projectId, isoDate) {
   const lancamento = lancamentosStore.lancamentos.find(
     (l) => l.data === isoDate && l.projectId === projectId
   )
-  return lancamento && (lancamento.triagem > 0 || lancamento.abordados > 0)
+  return lancamento && lancamento.triagem !== null && lancamento.abordados !== null
 }
 
 function projectStatus(projectId) {

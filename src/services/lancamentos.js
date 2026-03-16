@@ -8,6 +8,16 @@ export async function initUserSheet(token, userName) {
   }
 }
 
+function parseNum(val) {
+  if (val === undefined || val === null || val === '') return null
+  const n = Number(val)
+  return isNaN(n) ? null : n
+}
+
+function toCell(val) {
+  return val === null || val === undefined || val === '' ? '' : val
+}
+
 // Lê todos os lançamentos de um usuário
 export async function readLancamentos(token, userName) {
   const rows = await readSheet(token, userName).catch(() => [])
@@ -17,8 +27,8 @@ export async function readLancamentos(token, userName) {
     data: row[0] || '',
     projectId: row[1] || '',
     projectName: row[2] || '',
-    triagem: row[3] ? Number(row[3]) : 0,
-    abordados: row[4] ? Number(row[4]) : 0,
+    triagem: parseNum(row[3]),
+    abordados: parseNum(row[4]),
   }))
 }
 
@@ -28,12 +38,12 @@ export async function upsertLancamento(token, userName, data, projectId, project
   const dataRows = rows.slice(1)
   const existingIndex = dataRows.findIndex((r) => r[0] === data && r[1] === projectId)
 
+  const row = [data, projectId, projectName, toCell(triagem), toCell(abordados)]
+
   if (existingIndex >= 0) {
     const rowIndex = existingIndex + 2
-    await updateRange(token, `${userName}!A${rowIndex}:E${rowIndex}`, [
-      [data, projectId, projectName, triagem, abordados],
-    ])
+    await updateRange(token, `${userName}!A${rowIndex}:E${rowIndex}`, [row])
   } else {
-    await appendRows(token, userName, [[data, projectId, projectName, triagem, abordados]])
+    await appendRows(token, userName, [row])
   }
 }
