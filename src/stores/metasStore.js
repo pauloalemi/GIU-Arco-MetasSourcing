@@ -38,19 +38,19 @@ export const useMetasStore = defineStore('metas', {
       }
     },
 
-    async removeMeta(projectId) {
+    async removeMeta(projectId, paramKey) {
       const google = useGoogleStore()
       this.loading = true
       this.error = null
       try {
         const existing = this.metas.find((m) => m.projectId === projectId)
         if (existing) {
+          existing[paramKey] = 0
           await updateRange(
             google.accessToken,
             `${SHEET}!A${existing.rowIndex}:E${existing.rowIndex}`,
-            [['', '', '', '', '']]
+            [[existing.projectId, existing.projectName, existing.cadencia, existing.triagem, existing.abordados]]
           )
-          this.metas = this.metas.filter((m) => m.projectId !== projectId)
         }
       } catch (e) {
         this.error = e.message

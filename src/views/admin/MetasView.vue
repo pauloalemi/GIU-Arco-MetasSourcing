@@ -198,7 +198,7 @@ async function remover(param) {
   if (!selectedProject.value) return
   removing[param.key] = true
   try {
-    await metasStore.removeMeta(selectedProject.value.id)
+    await metasStore.removeMeta(selectedProject.value.id, param.key)
     form[param.key] = { cadencia: 'semanal', valor: null }
   } finally {
     removing[param.key] = false
