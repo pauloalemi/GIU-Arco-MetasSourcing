@@ -22,13 +22,24 @@
     <v-list nav class="mt-2">
       <!-- Menu do usuário comum -->
       <template v-if="!auth.isAdmin">
-        <v-list-item
-          prepend-icon="mdi-pencil-box-outline"
-          title="Lançar Triagens"
-          :to="{ name: 'Lancamentos' }"
-          rounded="lg"
-          :disabled="!google.isConnected"
-        />
+        <v-list-subheader>Meus Projetos</v-list-subheader>
+        <template v-if="google.isConnected">
+          <v-list-item
+            v-for="project in assignedProjects"
+            :key="project.id"
+            prepend-icon="mdi-briefcase-outline"
+            :title="project.name"
+            :to="{ name: 'Projeto', params: { projectId: project.id } }"
+            rounded="lg"
+          />
+          <v-list-item
+            v-if="!assignedProjects.length"
+            disabled
+            prepend-icon="mdi-briefcase-off-outline"
+            title="Nenhum projeto"
+            rounded="lg"
+          />
+        </template>
       </template>
 
       <!-- Menu do admin -->
@@ -111,21 +122,33 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useGoogleStore } from '../stores/googleStore'
+import { useProjectsStore } from '../stores/projectsStore'
 import TrocarSenhaDialog from '../components/TrocarSenhaDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const google = useGoogleStore()
+const projectsStore = useProjectsStore()
 const senhaDialog = ref(false)
 const connecting = ref(false)
+
+const assignedProjects = computed(() =>
+  projectsStore.active.filter((p) => p.users.includes(auth.user?.name))
+)
 
 onMounted(async () => {
   await google.init()
 })
+
+watch(() => google.isConnected, async (connected) => {
+  if (connected && !auth.isAdmin) {
+    await projectsStore.fetchProjects()
+  }
+}, { immediate: true })
 
 async function connect() {
   connecting.value = true

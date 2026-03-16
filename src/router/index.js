@@ -20,9 +20,9 @@ const routes = [
         component: () => import('../views/HomeView.vue'),
       },
       {
-        path: 'lancamentos',
-        name: 'Lancamentos',
-        component: () => import('../views/user/LancamentoView.vue'),
+        path: 'projeto/:projectId',
+        name: 'Projeto',
+        component: () => import('../views/user/ProjetoView.vue'),
         meta: { requiresAuth: true },
       },
       {
@@ -57,9 +57,9 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !auth.isLoggedIn) return { name: 'Login' }
   if (to.meta.guest && auth.isLoggedIn) {
-    return auth.isAdmin ? { name: 'Dashboard' } : { name: 'Lancamentos' }
+    return { name: 'Dashboard' }
   }
-  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'Lancamentos' }
+  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'Dashboard' }
 })
 
 export default router
