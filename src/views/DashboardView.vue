@@ -127,6 +127,13 @@
           rounded="lg"
           :disabled="!google.isConnected"
         />
+        <v-list-item
+          prepend-icon="mdi-chart-line"
+          title="Monitoria"
+          :to="{ name: 'AdminMonitoria' }"
+          rounded="lg"
+          :disabled="!google.isConnected"
+        />
       </template>
     </v-list>
 
