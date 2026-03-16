@@ -42,11 +42,17 @@
             <div class="font-weight-medium text-body-1 text-truncate">{{ user.name }}</div>
             <div class="text-caption text-medium-emphasis text-truncate">{{ getUserUsername(user.name) }}</div>
           </div>
-          <div>
-            <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(user)" />
-            <v-btn icon="mdi-lock-reset" variant="text" size="small" color="warning" @click="openTrocarSenha(user)" />
-            <v-btn icon="mdi-delete" variant="text" size="small" color="error" @click="openDelete(user)" />
-          </div>
+          <v-menu>
+            <template #activator="{ props }">
+              <v-btn icon="mdi-dots-vertical" variant="text" size="small" v-bind="props" />
+            </template>
+            <v-list density="compact">
+              <v-list-item prepend-icon="mdi-pencil" title="Renomear" @click="openEdit(user)" />
+              <v-list-item prepend-icon="mdi-lock-reset" title="Trocar senha" @click="openTrocarSenha(user)" />
+              <v-divider />
+              <v-list-item prepend-icon="mdi-delete" title="Excluir" base-color="error" @click="openDelete(user)" />
+            </v-list>
+          </v-menu>
         </v-card-text>
       </v-card>
     </v-col>
