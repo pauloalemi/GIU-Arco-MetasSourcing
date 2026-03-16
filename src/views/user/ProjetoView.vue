@@ -74,7 +74,45 @@
           </div>
         </div>
 
-        <!-- Futuras métricas virão aqui como novas linhas -->
+        <v-divider />
+
+        <!-- Linha: Abordados -->
+        <div class="d-flex align-center px-4 py-3">
+          <div style="width: 160px">
+            <div class="text-body-2 font-weight-medium">Abordados</div>
+            <div v-if="meta" class="text-caption text-medium-emphasis">
+              Meta: {{ meta.abordados }} / {{ cadenciaLabel }}
+            </div>
+          </div>
+
+          <div style="width: 180px">
+            <v-text-field
+              v-model.number="form.abordados"
+              type="number"
+              min="0"
+              variant="outlined"
+              density="compact"
+              hide-details
+              suffix="abordados"
+              style="max-width: 160px"
+            />
+          </div>
+
+          <div class="flex-grow-1 d-flex align-center" style="gap: 12px">
+            <v-progress-linear
+              v-if="meta?.abordados"
+              :model-value="progressoAbordadosPct"
+              :color="progressoAbordadosColor"
+              rounded
+              height="8"
+              class="flex-grow-1"
+            />
+            <span v-if="meta?.abordados" class="text-caption text-medium-emphasis" style="min-width: 36px">
+              {{ progressoAbordadosPct }}%
+            </span>
+            <span v-if="!meta?.abordados" class="text-caption text-medium-emphasis">Sem meta definida</span>
+          </div>
+        </div>
 
         <v-divider />
 
@@ -83,7 +121,7 @@
             color="primary"
             variant="flat"
             :loading="saving"
-            :disabled="form.triagem === null || form.triagem === undefined"
+            :disabled="form.triagem === null && form.abordados === null"
             @click="salvar"
           >
             Salvar
@@ -118,7 +156,7 @@ const metasStore = useMetasStore()
 const lancamentosStore = useLancamentosStore()
 
 const saving = ref(false)
-const form = reactive({ triagem: null })
+const form = reactive({ triagem: null, abordados: null })
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
 
@@ -147,11 +185,23 @@ const progressoColor = computed(() => {
   return 'error'
 })
 
+const progressoAbordadosPct = computed(() => {
+  if (!meta.value?.abordados) return 0
+  return Math.min(100, Math.round(((form.abordados || 0) / meta.value.abordados) * 100))
+})
+
+const progressoAbordadosColor = computed(() => {
+  if (progressoAbordadosPct.value >= 100) return 'success'
+  if (progressoAbordadosPct.value >= 60) return 'warning'
+  return 'error'
+})
+
 function preencherForm(date) {
   const lancamento = lancamentosStore.lancamentos.find(
     (l) => l.data === date && l.projectId === route.params.projectId
   )
   form.triagem = lancamento ? lancamento.triagem : null
+  form.abordados = lancamento ? lancamento.abordados : null
 }
 
 watch(selectedDate, preencherForm)
@@ -172,10 +222,10 @@ onMounted(async () => {
 })
 
 async function salvar() {
-  if (!project.value || form.triagem === null) return
+  if (!project.value || (form.triagem === null && form.abordados === null)) return
   saving.value = true
   try {
-    await lancamentosStore.save(selectedDate.value, project.value.id, project.value.name, form.triagem)
+    await lancamentosStore.save(selectedDate.value, project.value.id, project.value.name, form.triagem || 0, form.abordados || 0)
   } finally {
     saving.value = false
   }
