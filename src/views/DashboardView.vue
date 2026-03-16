@@ -26,6 +26,7 @@
           title="Lançar Triagens"
           :to="{ name: 'Lancamentos' }"
           rounded="lg"
+          :disabled="!google.isConnected"
         />
       </template>
 
@@ -44,32 +45,72 @@
           title="Usuários"
           :to="{ name: 'AdminUsers' }"
           rounded="lg"
+          :disabled="!google.isConnected"
         />
         <v-list-item
           prepend-icon="mdi-briefcase-outline"
           title="Projetos"
           :to="{ name: 'AdminProjects' }"
           rounded="lg"
+          :disabled="!google.isConnected"
         />
         <v-list-item
           prepend-icon="mdi-target"
           title="Metas"
           :to="{ name: 'AdminMetas' }"
           rounded="lg"
+          :disabled="!google.isConnected"
         />
       </template>
     </v-list>
+
+    <!-- Banner de conexão no rodapé do menu -->
+    <template #append>
+      <div v-if="!google.isConnected" class="pa-3">
+        <v-btn
+          block
+          color="warning"
+          variant="flat"
+          prepend-icon="mdi-google"
+          :loading="connecting"
+          @click="connect"
+        >
+          Conectar Google
+        </v-btn>
+      </div>
+      <div v-else class="pa-3">
+        <v-chip block color="success" variant="tonal" prepend-icon="mdi-check-circle" class="w-100">
+          Google conectado
+        </v-chip>
+      </div>
+    </template>
   </v-navigation-drawer>
 
   <v-main>
     <v-container class="pa-6">
+      <!-- Banner no topo do conteúdo se não conectado -->
+      <v-alert
+        v-if="!google.isConnected"
+        type="warning"
+        variant="tonal"
+        class="mb-6"
+        icon="mdi-google"
+      >
+        <div class="d-flex align-center justify-space-between flex-wrap gap-2">
+          <span>Conecte sua conta Google para usar o app.</span>
+          <v-btn color="warning" variant="flat" size="small" :loading="connecting" @click="connect">
+            Conectar agora
+          </v-btn>
+        </div>
+      </v-alert>
+
       <router-view />
     </v-container>
   </v-main>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useGoogleStore } from '../stores/googleStore'
@@ -79,6 +120,20 @@ const router = useRouter()
 const auth = useAuthStore()
 const google = useGoogleStore()
 const senhaDialog = ref(false)
+const connecting = ref(false)
+
+onMounted(async () => {
+  await google.init()
+})
+
+async function connect() {
+  connecting.value = true
+  try {
+    await google.requestToken()
+  } finally {
+    connecting.value = false
+  }
+}
 
 function handleLogout() {
   auth.logout()
