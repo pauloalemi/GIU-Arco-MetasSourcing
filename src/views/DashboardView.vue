@@ -14,6 +14,7 @@
   <TrocarSenhaDialog
     v-model="senhaDialog"
     :username="auth.user?.username || ''"
+    :display-name="auth.user?.name || ''"
     :require-actual="true"
   />
 

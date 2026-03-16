@@ -2,7 +2,7 @@
   <v-dialog v-model="model" max-width="420" persistent>
     <v-card rounded="lg">
       <v-card-title class="pa-6 pb-2">Trocar Senha</v-card-title>
-      <v-card-subtitle class="px-6">{{ username }}</v-card-subtitle>
+      <v-card-subtitle class="px-6">{{ displayName || username }}</v-card-subtitle>
       <v-card-text class="pt-4">
         <v-text-field
           v-if="requireActual"
@@ -63,7 +63,8 @@ import { updateSenha } from '../services/usuarios'
 
 const props = defineProps({
   username: { type: String, required: true },
-  requireActual: { type: Boolean, default: false }, // true para usuário comum
+  displayName: { type: String, default: '' },
+  requireActual: { type: Boolean, default: false },
 })
 
 const model = defineModel()

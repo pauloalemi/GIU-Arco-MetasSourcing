@@ -139,6 +139,7 @@
     v-if="senhaDialog.open"
     v-model="senhaDialog.open"
     :username="senhaDialog.username"
+    :display-name="senhaDialog.user?.name || ''"
     :require-actual="false"
   />
 
