@@ -28,7 +28,9 @@ export const useAuthStore = defineStore('auth', {
       if (registry[username]) {
         const r = registry[username]
         if (r.password === password) {
-          found = { username, role: r.role, name: r.name }
+          // Role do FALLBACK_USERS tem prioridade — evita perda acidental de privilégios
+          const fallback = FALLBACK_USERS.find((u) => u.username === username)
+          found = { username, role: fallback?.role || r.role, name: r.name }
         }
       } else {
         // Fallback para credenciais hardcoded
