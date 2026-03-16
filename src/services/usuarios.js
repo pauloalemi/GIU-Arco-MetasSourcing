@@ -41,12 +41,18 @@ export async function updateSenha(token, username, password) {
   const index = rows.slice(1).findIndex((r) => r[0] === username)
   if (index >= 0) {
     await updateRange(token, `${SHEET}!B${index + 2}`, [[password]])
+  } else {
+    // Usuário ainda não está na planilha — busca dados do registry e cria
+    const registry = loadRegistry()
+    const r = registry[username]
+    const role = r?.role || 'user'
+    const name = r?.name || username
+    await appendRows(token, SHEET, [[username, password, role, name]])
   }
   const registry = loadRegistry()
-  if (registry[username]) {
-    registry[username].password = password
-    saveRegistry(registry)
-  }
+  const entry = registry[username] || {}
+  registry[username] = { ...entry, password }
+  saveRegistry(registry)
 }
 
 export async function updateNome(token, username, name) {
