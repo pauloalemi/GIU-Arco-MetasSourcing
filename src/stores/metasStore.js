@@ -37,6 +37,28 @@ export const useMetasStore = defineStore('metas', {
       }
     },
 
+    async removeMeta(projectId) {
+      const google = useGoogleStore()
+      this.loading = true
+      this.error = null
+      try {
+        const existing = this.metas.find((m) => m.projectId === projectId)
+        if (existing) {
+          await updateRange(
+            google.accessToken,
+            `${SHEET}!A${existing.rowIndex}:D${existing.rowIndex}`,
+            [['', '', '', '']]
+          )
+          this.metas = this.metas.filter((m) => m.projectId !== projectId)
+        }
+      } catch (e) {
+        this.error = e.message
+        throw e
+      } finally {
+        this.loading = false
+      }
+    },
+
     async saveMeta(projectId, projectName, cadencia, triagem) {
       const google = useGoogleStore()
       this.loading = true

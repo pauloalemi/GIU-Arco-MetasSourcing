@@ -90,7 +90,16 @@
         />
       </div>
 
-      <div style="width: 80px" class="d-flex justify-end">
+      <div class="d-flex justify-end" style="width: 100px; gap: 6px">
+        <v-btn
+          v-if="getMeta(param.key)"
+          icon="mdi-delete"
+          variant="text"
+          size="small"
+          color="error"
+          :loading="removing[param.key]"
+          @click="remover(param)"
+        />
         <v-btn
           color="primary"
           variant="flat"
@@ -123,6 +132,7 @@ const metasStore = useMetasStore()
 
 const connecting = ref(false)
 const saving = reactive({})
+const removing = reactive({})
 const selectedProjectId = ref(null)
 const form = reactive({})
 
@@ -180,6 +190,17 @@ async function connect() {
     await Promise.all([projectsStore.fetchProjects(), metasStore.fetchMetas()])
   } finally {
     connecting.value = false
+  }
+}
+
+async function remover(param) {
+  if (!selectedProject.value) return
+  removing[param.key] = true
+  try {
+    await metasStore.removeMeta(selectedProject.value.id)
+    form[param.key] = { cadencia: 'semanal', valor: null }
+  } finally {
+    removing[param.key] = false
   }
 }
 
