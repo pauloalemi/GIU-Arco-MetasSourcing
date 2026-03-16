@@ -3,7 +3,7 @@
     <v-app-bar-title>Metas Sourcing</v-app-bar-title>
     <v-spacer />
     <span class="mr-2 text-body-2">{{ auth.user?.name }}</span>
-    <v-btn icon @click="senhaDialog = true">
+    <v-btn v-if="google.isConnected" icon @click="senhaDialog = true">
       <v-icon>mdi-lock-reset</v-icon>
     </v-btn>
     <v-btn icon @click="handleLogout">
@@ -72,10 +72,12 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useGoogleStore } from '../stores/googleStore'
 import TrocarSenhaDialog from '../components/TrocarSenhaDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const google = useGoogleStore()
 const senhaDialog = ref(false)
 
 function handleLogout() {
