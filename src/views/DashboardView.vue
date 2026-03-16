@@ -35,24 +35,19 @@
                 v-bind="props"
                 :to="{ name: 'Projeto', params: { projectId: project.id } }"
                 rounded="lg"
+                class="px-3"
               >
-                <template #prepend>
-                  <v-icon size="18" class="mr-2">mdi-briefcase-outline</v-icon>
-                </template>
-                <v-list-item-title class="text-truncate">{{ project.name }}</v-list-item-title>
+                <div class="d-flex align-center" style="gap: 8px; min-width: 0">
+                  <v-icon size="18" style="flex-shrink: 0">mdi-briefcase-outline</v-icon>
+                  <span class="text-truncate text-body-2">{{ project.name }}</span>
+                </div>
               </v-list-item>
             </template>
           </v-tooltip>
-          <v-list-item
-            v-if="!assignedProjects.length"
-            disabled
-            rounded="lg"
-          >
-            <template #prepend>
-              <v-icon size="18" class="mr-2">mdi-briefcase-off-outline</v-icon>
-            </template>
-            <v-list-item-title>Nenhum projeto</v-list-item-title>
-          </v-list-item>
+          <div v-if="!assignedProjects.length" class="px-3 py-2 d-flex align-center text-medium-emphasis" style="gap: 8px">
+            <v-icon size="18">mdi-briefcase-off-outline</v-icon>
+            <span class="text-body-2">Nenhum projeto</span>
+          </div>
         </template>
       </template>
 
