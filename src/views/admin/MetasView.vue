@@ -139,6 +139,7 @@ const form = reactive({})
 // Parâmetros disponíveis — adicionar aqui quando houver novos
 const parametros = [
   { key: 'triagem', label: 'Triagens', suffix: 'triagens' },
+  { key: 'abordados', label: 'Abordados', suffix: 'abordados' },
 ]
 
 const cadencias = [
@@ -212,7 +213,8 @@ async function salvar(param) {
       selectedProject.value.id,
       selectedProject.value.name,
       form[param.key].cadencia,
-      param.key === 'triagem' ? form[param.key].valor : 0
+      form['triagem'].valor || 0,
+      form['abordados'].valor || 0,
     )
   } finally {
     saving[param.key] = false

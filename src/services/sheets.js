@@ -74,7 +74,7 @@ export async function initConfigSheets(token) {
 
   if (!names.includes('_metas')) {
     await createSheet(token, '_metas')
-    await appendRows(token, '_metas', [['projeto_id', 'projeto_nome', 'cadencia', 'triagem']])
+    await appendRows(token, '_metas', [['projeto_id', 'projeto_nome', 'cadencia', 'triagem', 'abordados']])
   }
 
   if (!names.includes('_usuarios')) {

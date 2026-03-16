@@ -12,6 +12,7 @@ function parseMetas(rows) {
     projectName: row[1] || '',
     cadencia: row[2] || 'semanal',
     triagem: row[3] ? Number(row[3]) : 0,
+    abordados: row[4] ? Number(row[4]) : 0,
   }))
 }
 
@@ -46,8 +47,8 @@ export const useMetasStore = defineStore('metas', {
         if (existing) {
           await updateRange(
             google.accessToken,
-            `${SHEET}!A${existing.rowIndex}:D${existing.rowIndex}`,
-            [['', '', '', '']]
+            `${SHEET}!A${existing.rowIndex}:E${existing.rowIndex}`,
+            [['', '', '', '', '']]
           )
           this.metas = this.metas.filter((m) => m.projectId !== projectId)
         }
@@ -59,7 +60,7 @@ export const useMetasStore = defineStore('metas', {
       }
     },
 
-    async saveMeta(projectId, projectName, cadencia, triagem) {
+    async saveMeta(projectId, projectName, cadencia, triagem, abordados) {
       const google = useGoogleStore()
       this.loading = true
       this.error = null
@@ -68,14 +69,15 @@ export const useMetasStore = defineStore('metas', {
         if (existing) {
           await updateRange(
             google.accessToken,
-            `${SHEET}!A${existing.rowIndex}:D${existing.rowIndex}`,
-            [[projectId, projectName, cadencia, triagem]]
+            `${SHEET}!A${existing.rowIndex}:E${existing.rowIndex}`,
+            [[projectId, projectName, cadencia, triagem, abordados]]
           )
           existing.projectName = projectName
           existing.cadencia = cadencia
           existing.triagem = triagem
+          existing.abordados = abordados
         } else {
-          await appendRows(google.accessToken, SHEET, [[projectId, projectName, cadencia, triagem]])
+          await appendRows(google.accessToken, SHEET, [[projectId, projectName, cadencia, triagem, abordados]])
           await this.fetchMetas()
         }
       } catch (e) {
