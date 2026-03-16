@@ -24,13 +24,36 @@
       <template v-if="!auth.isAdmin">
         <!-- Data picker -->
         <div class="px-3 pt-1 pb-2">
-          <v-text-field
-            v-model="lancamentosStore.selectedDate"
-            type="date"
-            variant="outlined"
-            density="compact"
-            hide-details
-          />
+          <v-menu v-model="calendarMenu" :close-on-content-click="false" location="end">
+            <template #activator="{ props: menuProps }">
+              <v-btn
+                v-bind="menuProps"
+                variant="outlined"
+                size="small"
+                prepend-icon="mdi-calendar"
+                class="text-none w-100 justify-start"
+              >
+                {{ formatSelectedDate }}
+              </v-btn>
+            </template>
+            <v-date-picker
+              :modelValue="pickerDate"
+              @update:modelValue="onDateSelect"
+              hide-header
+              elevation="4"
+            >
+              <template #day="{ props: dayProps, item }">
+                <div style="position: relative; display: inline-block;">
+                  <v-btn v-bind="dayProps" />
+                  <span
+                    v-if="dayDotStatus(item.date)"
+                    style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; pointer-events: none;"
+                    :style="{ backgroundColor: dayDotStatus(item.date) === 'ok' ? '#4CAF50' : '#FF9800' }"
+                  />
+                </div>
+              </template>
+            </v-date-picker>
+          </v-menu>
         </div>
         <v-list-subheader>Meus Projetos</v-list-subheader>
         <template v-if="google.isConnected">
@@ -171,6 +194,44 @@ const metasStore = useMetasStore()
 const lancamentosStore = useLancamentosStore()
 const senhaDialog = ref(false)
 const connecting = ref(false)
+const calendarMenu = ref(false)
+
+const pickerDate = computed(() => {
+  const [y, m, d] = lancamentosStore.selectedDate.split('-').map(Number)
+  return new Date(y, m - 1, d)
+})
+
+const formatSelectedDate = computed(() => {
+  const [y, m, d] = lancamentosStore.selectedDate.split('-')
+  return `${d}/${m}/${y}`
+})
+
+function onDateSelect(val) {
+  if (!val) return
+  const d = val instanceof Date ? val : new Date(val)
+  lancamentosStore.selectedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  calendarMenu.value = false
+}
+
+function dayDotStatus(date) {
+  if (!date) return null
+  const d = date instanceof Date ? date : new Date(date)
+  const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const projectsWithMetas = assignedProjects.value.filter((p) =>
+    metasStore.metas.find((m) => m.projectId === p.id)
+  )
+  if (!projectsWithMetas.length) return null
+  for (const project of projectsWithMetas) {
+    const meta = metasStore.metas.find((m) => m.projectId === project.id)
+    const lancamento = lancamentosStore.lancamentos.find(
+      (l) => l.data === isoDate && l.projectId === project.id
+    )
+    const trigemOk = !meta.triagem || (lancamento && lancamento.triagem > 0)
+    const abordadosOk = !meta.abordados || (lancamento && lancamento.abordados > 0)
+    if (!trigemOk || !abordadosOk) return 'warning'
+  }
+  return 'ok'
+}
 
 const assignedProjects = computed(() =>
   projectsStore.active
