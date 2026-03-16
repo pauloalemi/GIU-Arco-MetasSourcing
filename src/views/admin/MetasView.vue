@@ -90,7 +90,7 @@
         />
       </div>
 
-      <div class="d-flex justify-end" style="width: 100px; gap: 6px">
+      <div class="d-flex align-center justify-end" style="width: 100px; gap: 6px">
         <v-btn
           v-if="getMeta(param.key)"
           icon="mdi-delete"
