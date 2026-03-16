@@ -59,9 +59,17 @@ export const useGoogleStore = defineStore('google', {
           if (response.access_token) {
             this.accessToken = response.access_token
             saveToken(response.access_token)
-            // Sincroniza registry de usuários ao conectar
-            const { syncRegistry } = await import('../services/usuarios')
-            syncRegistry(response.access_token).catch(() => {})
+            // Sincroniza registry e garante que o admin esteja na planilha
+            const { syncRegistry, addUsuario, loadRegistry } = await import('../services/usuarios')
+            await syncRegistry(response.access_token).catch(() => {})
+            const registry = loadRegistry()
+            if (!registry['giuliana']) {
+              const { useAuthStore } = await import('./auth')
+              const auth = useAuthStore()
+              if (auth.user?.username === 'giuliana') {
+                addUsuario(response.access_token, 'giuliana', 'admin123', 'admin', 'Giuliana Caram').catch(() => {})
+              }
+            }
           }
         },
       })
