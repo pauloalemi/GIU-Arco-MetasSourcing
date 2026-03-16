@@ -24,21 +24,35 @@
       <template v-if="!auth.isAdmin">
         <v-list-subheader>Meus Projetos</v-list-subheader>
         <template v-if="google.isConnected">
-          <v-list-item
+          <v-tooltip
             v-for="project in assignedProjects"
             :key="project.id"
-            prepend-icon="mdi-briefcase-outline"
-            :title="project.name"
-            :to="{ name: 'Projeto', params: { projectId: project.id } }"
-            rounded="lg"
-          />
+            :text="project.name"
+            location="right"
+          >
+            <template #activator="{ props }">
+              <v-list-item
+                v-bind="props"
+                :to="{ name: 'Projeto', params: { projectId: project.id } }"
+                rounded="lg"
+              >
+                <template #prepend>
+                  <v-icon size="18" class="mr-2">mdi-briefcase-outline</v-icon>
+                </template>
+                <v-list-item-title class="text-truncate">{{ project.name }}</v-list-item-title>
+              </v-list-item>
+            </template>
+          </v-tooltip>
           <v-list-item
             v-if="!assignedProjects.length"
             disabled
-            prepend-icon="mdi-briefcase-off-outline"
-            title="Nenhum projeto"
             rounded="lg"
-          />
+          >
+            <template #prepend>
+              <v-icon size="18" class="mr-2">mdi-briefcase-off-outline</v-icon>
+            </template>
+            <v-list-item-title>Nenhum projeto</v-list-item-title>
+          </v-list-item>
         </template>
       </template>
 
@@ -137,7 +151,9 @@ const senhaDialog = ref(false)
 const connecting = ref(false)
 
 const assignedProjects = computed(() =>
-  projectsStore.active.filter((p) => p.users.includes(auth.user?.name))
+  projectsStore.active
+    .filter((p) => p.users.includes(auth.user?.name))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
 )
 
 onMounted(async () => {
