@@ -44,7 +44,7 @@
             >
               <template #day="{ props: dayProps, item }">
                 <div style="position: relative; display: inline-block;">
-                  <v-btn v-bind="dayProps" />
+                  <v-btn v-bind="dayProps">{{ new Date(item.date).getDate() }}</v-btn>
                   <span
                     v-if="dayDotStatus(item.date)"
                     style="position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 5px; height: 5px; border-radius: 50%; pointer-events: none;"
