@@ -217,20 +217,11 @@ function dayDotStatus(date) {
   if (!date) return null
   const d = date instanceof Date ? date : new Date(date)
   const isoDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  const projectsWithMetas = assignedProjects.value.filter((p) =>
-    metasStore.metas.find((m) => m.projectId === p.id)
-  )
-  if (!projectsWithMetas.length) return null
-  for (const project of projectsWithMetas) {
-    const meta = metasStore.metas.find((m) => m.projectId === project.id)
-    const lancamento = lancamentosStore.lancamentos.find(
-      (l) => l.data === isoDate && l.projectId === project.id
-    )
-    const trigemOk = !meta.triagem || (lancamento && lancamento.triagem > 0)
-    const abordadosOk = !meta.abordados || (lancamento && lancamento.abordados > 0)
-    if (!trigemOk || !abordadosOk) return 'warning'
-  }
-  return 'ok'
+  const today = new Date().toISOString().split('T')[0]
+  if (isoDate > today) return null
+  if (!assignedProjects.value.length) return null
+  const allFilled = assignedProjects.value.every((p) => isFilledForDate(p.id, isoDate))
+  return allFilled ? 'ok' : 'warning'
 }
 
 const assignedProjects = computed(() =>
@@ -239,15 +230,15 @@ const assignedProjects = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
 )
 
-function projectStatus(projectId) {
-  const meta = metasStore.metas.find((m) => m.projectId === projectId)
-  if (!meta) return null
+function isFilledForDate(projectId, isoDate) {
   const lancamento = lancamentosStore.lancamentos.find(
-    (l) => l.data === lancamentosStore.selectedDate && l.projectId === projectId
+    (l) => l.data === isoDate && l.projectId === projectId
   )
-  const trigemOk = !meta.triagem || (lancamento && lancamento.triagem > 0)
-  const abordadosOk = !meta.abordados || (lancamento && lancamento.abordados > 0)
-  return trigemOk && abordadosOk ? 'ok' : 'warning'
+  return lancamento && (lancamento.triagem > 0 || lancamento.abordados > 0)
+}
+
+function projectStatus(projectId) {
+  return isFilledForDate(projectId, lancamentosStore.selectedDate) ? 'ok' : 'warning'
 }
 
 onMounted(async () => {
