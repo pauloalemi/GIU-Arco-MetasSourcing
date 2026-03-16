@@ -102,6 +102,12 @@ async function salvar() {
   loading.value = true
 
   try {
+    if (!google.accessToken) {
+      erro.value = 'Conecte o Google Sheets antes de trocar a senha.'
+      loading.value = false
+      return
+    }
+
     if (props.requireActual) {
       const { useAuthStore } = await import('../stores/auth')
       const authStore = useAuthStore()
@@ -117,7 +123,7 @@ async function salvar() {
     sucesso.value = true
     setTimeout(fechar, 1500)
   } catch (e) {
-    erro.value = 'Erro ao salvar. Verifique sua conexão com o Google.'
+    erro.value = e.message || 'Erro ao salvar. Verifique sua conexão com o Google.'
   } finally {
     loading.value = false
   }
