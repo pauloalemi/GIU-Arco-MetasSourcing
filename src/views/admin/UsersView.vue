@@ -39,8 +39,8 @@
             <span class="text-h6 text-white">{{ user.name[0]?.toUpperCase() }}</span>
           </v-avatar>
           <div class="flex-grow-1">
-            <div class="font-weight-medium text-body-1">{{ user.name }}</div>
-            <div class="text-caption text-medium-emphasis">{{ getUserUsername(user.name) }}</div>
+            <div class="font-weight-medium text-body-1 text-truncate">{{ user.name }}</div>
+            <div class="text-caption text-medium-emphasis text-truncate">{{ getUserUsername(user.name) }}</div>
           </div>
           <div>
             <v-btn icon="mdi-pencil" variant="text" size="small" @click="openEdit(user)" />
