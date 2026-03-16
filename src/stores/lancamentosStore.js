@@ -5,6 +5,7 @@ import { initUserSheet, readLancamentos, upsertLancamento } from '../services/la
 
 export const useLancamentosStore = defineStore('lancamentos', {
   state: () => ({
+    selectedDate: new Date().toISOString().split('T')[0],
     lancamentos: [],
     loading: false,
     saving: false,

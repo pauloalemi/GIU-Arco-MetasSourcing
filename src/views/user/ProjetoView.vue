@@ -1,21 +1,22 @@
 <template>
   <div>
     <!-- Cabeçalho -->
-    <div class="d-flex align-center mb-6">
-      <div>
-        <h2 class="text-h5 font-weight-bold">{{ project?.name }}</h2>
-        <p class="text-body-2 text-medium-emphasis">Registre os resultados do dia.</p>
-      </div>
-      <v-spacer />
-      <v-text-field
-        v-model="selectedDate"
-        type="date"
-        variant="outlined"
-        density="compact"
-        hide-details
-        style="max-width: 180px"
-      />
+    <div class="mb-6">
+      <h2 class="text-h5 font-weight-bold">{{ project?.name }}</h2>
+      <p class="text-body-2 text-medium-emphasis">Registre os resultados do dia.</p>
     </div>
+
+    <!-- Alerta de alterações não salvas -->
+    <v-alert
+      v-if="isDirty"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      icon="mdi-content-save-alert"
+      class="mb-4"
+    >
+      Você tem alterações não salvas.
+    </v-alert>
 
     <v-alert v-if="lancamentosStore.error" type="error" variant="tonal" class="mb-4" closable @click:close="lancamentosStore.error = null">
       {{ lancamentosStore.error }}
@@ -157,8 +158,12 @@ const lancamentosStore = useLancamentosStore()
 
 const saving = ref(false)
 const form = reactive({ triagem: null, abordados: null })
-const today = new Date().toISOString().split('T')[0]
-const selectedDate = ref(today)
+const savedValues = ref({ triagem: null, abordados: null })
+
+const isDirty = computed(() =>
+  form.triagem !== savedValues.value.triagem ||
+  form.abordados !== savedValues.value.abordados
+)
 
 const loading = computed(() => projectsStore.loading || metasStore.loading || lancamentosStore.loading)
 
@@ -202,11 +207,12 @@ function preencherForm(date) {
   )
   form.triagem = lancamento ? lancamento.triagem : null
   form.abordados = lancamento ? lancamento.abordados : null
+  savedValues.value = { triagem: form.triagem, abordados: form.abordados }
 }
 
-watch(selectedDate, preencherForm)
-watch(() => lancamentosStore.lancamentos, () => preencherForm(selectedDate.value))
-watch(() => route.params.projectId, () => preencherForm(selectedDate.value))
+watch(() => lancamentosStore.selectedDate, preencherForm)
+watch(() => lancamentosStore.lancamentos, () => preencherForm(lancamentosStore.selectedDate))
+watch(() => route.params.projectId, () => preencherForm(lancamentosStore.selectedDate))
 
 onMounted(async () => {
   await google.init()
@@ -217,7 +223,7 @@ onMounted(async () => {
       metasStore.fetchMetas(),
       lancamentosStore.init(),
     ])
-    preencherForm(selectedDate.value)
+    preencherForm(lancamentosStore.selectedDate)
   }
 })
 
@@ -225,7 +231,8 @@ async function salvar() {
   if (!project.value || (form.triagem === null && form.abordados === null)) return
   saving.value = true
   try {
-    await lancamentosStore.save(selectedDate.value, project.value.id, project.value.name, form.triagem || 0, form.abordados || 0)
+    await lancamentosStore.save(lancamentosStore.selectedDate, project.value.id, project.value.name, form.triagem || 0, form.abordados || 0)
+    savedValues.value = { triagem: form.triagem, abordados: form.abordados }
   } finally {
     saving.value = false
   }

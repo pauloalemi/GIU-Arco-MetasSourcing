@@ -22,6 +22,16 @@
     <v-list nav class="mt-2">
       <!-- Menu do usuário comum -->
       <template v-if="!auth.isAdmin">
+        <!-- Data picker -->
+        <div class="px-3 pt-1 pb-2">
+          <v-text-field
+            v-model="lancamentosStore.selectedDate"
+            type="date"
+            variant="outlined"
+            density="compact"
+            hide-details
+          />
+        </div>
         <v-list-subheader>Meus Projetos</v-list-subheader>
         <template v-if="google.isConnected">
           <v-tooltip
@@ -39,7 +49,19 @@
               >
                 <div class="d-flex align-center" style="gap: 8px; min-width: 0">
                   <v-icon size="18" style="flex-shrink: 0">mdi-briefcase-outline</v-icon>
-                  <span class="text-truncate text-body-2">{{ project.name }}</span>
+                  <span class="text-truncate text-body-2 flex-grow-1">{{ project.name }}</span>
+                  <v-icon
+                    v-if="projectStatus(project.id) === 'ok'"
+                    size="16"
+                    color="success"
+                    style="flex-shrink: 0"
+                  >mdi-check-circle</v-icon>
+                  <v-icon
+                    v-else-if="projectStatus(project.id) === 'warning'"
+                    size="16"
+                    color="warning"
+                    style="flex-shrink: 0"
+                  >mdi-alert</v-icon>
                 </div>
               </v-list-item>
             </template>
@@ -136,12 +158,17 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useGoogleStore } from '../stores/googleStore'
 import { useProjectsStore } from '../stores/projectsStore'
+import { useMetasStore } from '../stores/metasStore'
+import { useLancamentosStore } from '../stores/lancamentosStore'
+import { initConfigSheets } from '../services/sheets'
 import TrocarSenhaDialog from '../components/TrocarSenhaDialog.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const google = useGoogleStore()
 const projectsStore = useProjectsStore()
+const metasStore = useMetasStore()
+const lancamentosStore = useLancamentosStore()
 const senhaDialog = ref(false)
 const connecting = ref(false)
 
@@ -151,13 +178,29 @@ const assignedProjects = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
 )
 
+function projectStatus(projectId) {
+  const meta = metasStore.metas.find((m) => m.projectId === projectId)
+  if (!meta) return null
+  const lancamento = lancamentosStore.lancamentos.find(
+    (l) => l.data === lancamentosStore.selectedDate && l.projectId === projectId
+  )
+  const trigemOk = !meta.triagem || (lancamento && lancamento.triagem > 0)
+  const abordadosOk = !meta.abordados || (lancamento && lancamento.abordados > 0)
+  return trigemOk && abordadosOk ? 'ok' : 'warning'
+}
+
 onMounted(async () => {
   await google.init()
 })
 
 watch(() => google.isConnected, async (connected) => {
   if (connected && !auth.isAdmin) {
-    await projectsStore.fetchProjects()
+    await initConfigSheets(google.accessToken)
+    await Promise.all([
+      projectsStore.fetchProjects(),
+      metasStore.fetchMetas(),
+      lancamentosStore.init(),
+    ])
   }
 }, { immediate: true })
 
