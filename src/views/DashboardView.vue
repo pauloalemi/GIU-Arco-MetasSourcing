@@ -18,7 +18,7 @@
     :require-actual="true"
   />
 
-  <v-navigation-drawer permanent width="220">
+  <v-navigation-drawer permanent width="260">
     <v-list nav class="mt-2">
       <!-- Menu do usuário comum -->
       <template v-if="!auth.isAdmin">
