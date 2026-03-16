@@ -1,8 +1,20 @@
 <template>
   <div>
-    <div class="mb-6">
-      <h2 class="text-h5 font-weight-bold">{{ project?.name }}</h2>
-      <p class="text-body-2 text-medium-emphasis">Registre as triagens realizadas neste projeto.</p>
+    <!-- Cabeçalho -->
+    <div class="d-flex align-center mb-6">
+      <div>
+        <h2 class="text-h5 font-weight-bold">{{ project?.name }}</h2>
+        <p class="text-body-2 text-medium-emphasis">Registre os resultados do dia.</p>
+      </div>
+      <v-spacer />
+      <v-text-field
+        v-model="selectedDate"
+        type="date"
+        variant="outlined"
+        density="compact"
+        hide-details
+        style="max-width: 180px"
+      />
     </div>
 
     <v-alert v-if="lancamentosStore.error" type="error" variant="tonal" class="mb-4" closable @click:close="lancamentosStore.error = null">
@@ -14,69 +26,70 @@
     </div>
 
     <template v-else-if="project">
-      <v-row>
-        <v-col cols="12" md="5">
-          <v-card rounded="lg" elevation="2">
-            <v-card-text>
-              <!-- Seletor de data -->
-              <v-text-field
-                v-model="selectedDate"
-                type="date"
-                label="Data"
-                variant="outlined"
-                density="compact"
-                class="mb-4"
-                hide-details
-              />
+      <v-card rounded="lg" elevation="2">
+        <!-- Cabeçalho da tabela -->
+        <div class="d-flex align-center px-4 py-2 bg-grey-lighten-4 text-caption text-medium-emphasis font-weight-medium">
+          <div style="width: 160px">Métrica</div>
+          <div style="width: 180px">Realizado</div>
+          <div class="flex-grow-1">Progresso</div>
+        </div>
 
-              <!-- Meta -->
-              <div v-if="meta" class="mb-4">
-                <v-chip color="primary" variant="tonal" size="small">
-                  Meta: {{ meta.triagem }} triagens / {{ cadenciaLabel }}
-                </v-chip>
-              </div>
+        <v-divider />
 
-              <!-- Input de triagem -->
-              <v-text-field
-                v-model.number="triagem"
-                label="Triagens realizadas"
-                type="number"
-                min="0"
-                variant="outlined"
-                density="compact"
-                suffix="triagens"
-                hide-details
-                class="mb-4"
-              />
+        <!-- Linha: Triagem -->
+        <div class="d-flex align-center px-4 py-3">
+          <div style="width: 160px">
+            <div class="text-body-2 font-weight-medium">Triagens</div>
+            <div v-if="meta" class="text-caption text-medium-emphasis">
+              Meta: {{ meta.triagem }} / {{ cadenciaLabel }}
+            </div>
+          </div>
 
-              <!-- Progresso -->
-              <div v-if="meta && triagem >= 0" class="mb-4">
-                <div class="d-flex justify-space-between text-caption text-medium-emphasis mb-1">
-                  <span>Progresso</span>
-                  <span>{{ progressoPct }}%</span>
-                </div>
-                <v-progress-linear
-                  :model-value="progressoPct"
-                  :color="progressoColor"
-                  rounded
-                  height="8"
-                />
-              </div>
+          <div style="width: 180px">
+            <v-text-field
+              v-model.number="form.triagem"
+              type="number"
+              min="0"
+              variant="outlined"
+              density="compact"
+              hide-details
+              suffix="triagens"
+              style="max-width: 160px"
+            />
+          </div>
 
-              <v-btn
-                color="primary"
-                variant="flat"
-                block
-                :loading="saving"
-                :disabled="triagem === null || triagem === undefined"
-                @click="salvar"
-              >
-                Salvar
-              </v-btn>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
+          <div class="flex-grow-1 d-flex align-center" style="gap: 12px">
+            <v-progress-linear
+              v-if="meta"
+              :model-value="progressoPct"
+              :color="progressoColor"
+              rounded
+              height="8"
+              class="flex-grow-1"
+            />
+            <span v-if="meta" class="text-caption text-medium-emphasis" style="min-width: 36px">
+              {{ progressoPct }}%
+            </span>
+            <span v-if="!meta" class="text-caption text-medium-emphasis">Sem meta definida</span>
+          </div>
+        </div>
+
+        <!-- Futuras métricas virão aqui como novas linhas -->
+
+        <v-divider />
+
+        <div class="d-flex justify-end px-4 py-3">
+          <v-btn
+            color="primary"
+            variant="flat"
+            :loading="saving"
+            :disabled="form.triagem === null || form.triagem === undefined"
+            @click="salvar"
+          >
+            Salvar
+          </v-btn>
+        </div>
+      </v-card>
     </template>
 
     <v-empty-state
@@ -88,7 +101,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useProjectsStore } from '../../stores/projectsStore'
@@ -105,7 +118,7 @@ const metasStore = useMetasStore()
 const lancamentosStore = useLancamentosStore()
 
 const saving = ref(false)
-const triagem = ref(null)
+const form = reactive({ triagem: null })
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
 
@@ -125,7 +138,7 @@ const cadenciaLabel = computed(() =>
 
 const progressoPct = computed(() => {
   if (!meta.value?.triagem) return 0
-  return Math.min(100, Math.round(((triagem.value || 0) / meta.value.triagem) * 100))
+  return Math.min(100, Math.round(((form.triagem || 0) / meta.value.triagem) * 100))
 })
 
 const progressoColor = computed(() => {
@@ -138,7 +151,7 @@ function preencherForm(date) {
   const lancamento = lancamentosStore.lancamentos.find(
     (l) => l.data === date && l.projectId === route.params.projectId
   )
-  triagem.value = lancamento ? lancamento.triagem : null
+  form.triagem = lancamento ? lancamento.triagem : null
 }
 
 watch(selectedDate, preencherForm)
@@ -159,10 +172,10 @@ onMounted(async () => {
 })
 
 async function salvar() {
-  if (!project.value || triagem.value === null) return
+  if (!project.value || form.triagem === null) return
   saving.value = true
   try {
-    await lancamentosStore.save(selectedDate.value, project.value.id, project.value.name, triagem.value)
+    await lancamentosStore.save(selectedDate.value, project.value.id, project.value.name, form.triagem)
   } finally {
     saving.value = false
   }
