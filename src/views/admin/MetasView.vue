@@ -12,80 +12,102 @@
   <!-- Cabeçalho -->
   <div class="mb-6">
     <h2 class="text-h5 font-weight-bold">Metas</h2>
-    <p class="text-body-2 text-medium-emphasis">
-      Defina as metas de triagem por projeto.
-    </p>
+    <p class="text-body-2 text-medium-emphasis">Defina as metas por projeto e parâmetro.</p>
   </div>
 
   <v-alert v-if="metasStore.error" type="error" variant="tonal" class="mb-4" closable @click:close="metasStore.error = null">
     {{ metasStore.error }}
   </v-alert>
 
-  <div v-if="loading" class="d-flex justify-center py-12">
-    <v-progress-circular indeterminate color="primary" />
+  <!-- Seletor de projeto -->
+  <v-select
+    v-model="selectedProjectId"
+    :items="projectItems"
+    label="Selecione um projeto"
+    variant="outlined"
+    density="compact"
+    clearable
+    style="max-width: 360px"
+    class="mb-6"
+    :disabled="!google.isConnected"
+  />
+
+  <!-- Tabela de parâmetros -->
+  <v-card v-if="selectedProject" rounded="lg" elevation="2">
+    <!-- Cabeçalho -->
+    <div class="d-flex align-center px-4 py-2 bg-grey-lighten-4 text-caption text-medium-emphasis font-weight-medium">
+      <div style="width: 160px">Parâmetro</div>
+      <div style="width: 180px">Cadência</div>
+      <div class="flex-grow-1">Meta</div>
+      <div style="width: 80px"></div>
+    </div>
+
+    <v-divider />
+
+    <!-- Linha por parâmetro -->
+    <div
+      v-for="param in parametros"
+      :key="param.key"
+      class="d-flex align-center px-4 py-3"
+    >
+      <div style="width: 160px">
+        <div class="text-body-2 font-weight-medium">{{ param.label }}</div>
+        <v-chip
+          v-if="getMeta(param.key)"
+          size="x-small"
+          color="success"
+          variant="tonal"
+          class="mt-1"
+        >
+          Configurado
+        </v-chip>
+        <v-chip v-else size="x-small" color="warning" variant="tonal" class="mt-1">
+          Sem meta
+        </v-chip>
+      </div>
+
+      <div style="width: 180px">
+        <v-select
+          v-model="form[param.key].cadencia"
+          :items="cadencias"
+          variant="outlined"
+          density="compact"
+          hide-details
+          style="max-width: 160px"
+        />
+      </div>
+
+      <div class="flex-grow-1">
+        <v-text-field
+          v-model.number="form[param.key].valor"
+          type="number"
+          min="1"
+          variant="outlined"
+          density="compact"
+          hide-details
+          :suffix="param.suffix"
+          style="max-width: 200px"
+        />
+      </div>
+
+      <div style="width: 80px" class="d-flex justify-end">
+        <v-btn
+          color="primary"
+          variant="flat"
+          size="small"
+          :loading="saving[param.key]"
+          :disabled="!form[param.key].valor"
+          @click="salvar(param)"
+        >
+          Salvar
+        </v-btn>
+      </div>
+    </div>
+  </v-card>
+
+  <div v-else-if="google.isConnected && !selectedProjectId" class="text-body-2 text-medium-emphasis">
+    Selecione um projeto para configurar as metas.
   </div>
-
-  <template v-else>
-    <v-row v-if="projectsStore.active.length">
-      <v-col v-for="project in projectsStore.active" :key="project.id" cols="12" sm="6" md="4">
-        <v-card rounded="lg" elevation="2">
-          <v-card-text>
-            <div class="d-flex align-center mb-4">
-              <v-icon color="primary" class="mr-2">mdi-briefcase-outline</v-icon>
-              <span class="font-weight-medium">{{ project.name }}</span>
-              <v-spacer />
-              <v-chip
-                size="small"
-                :color="getMeta(project.id) ? 'success' : 'warning'"
-                variant="tonal"
-              >
-                {{ getMeta(project.id) ? 'Configurado' : 'Sem meta' }}
-              </v-chip>
-            </div>
-
-            <v-select
-              v-model="form[project.id].cadencia"
-              label="Cadência"
-              :items="cadencias"
-              variant="outlined"
-              density="compact"
-              class="mb-3"
-            />
-
-            <v-text-field
-              v-model.number="form[project.id].triagem"
-              label="Meta de triagens"
-              type="number"
-              min="1"
-              variant="outlined"
-              density="compact"
-              suffix="triagens"
-            />
-          </v-card-text>
-          <v-card-actions class="px-4 pb-4 pt-0">
-            <v-spacer />
-            <v-btn
-              color="primary"
-              variant="flat"
-              size="small"
-              :loading="saving[project.id]"
-              :disabled="!form[project.id].triagem"
-              @click="save(project)"
-            >
-              Salvar
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <v-empty-state
-      v-else
-      icon="mdi-briefcase-outline"
-      title="Nenhum projeto ativo"
-      text="Crie projetos na seção Projetos para configurar as metas."
-    />
-  </template>
 </template>
 
 <script setup>
@@ -101,30 +123,45 @@ const metasStore = useMetasStore()
 
 const connecting = ref(false)
 const saving = reactive({})
+const selectedProjectId = ref(null)
 const form = reactive({})
+
+// Parâmetros disponíveis — adicionar aqui quando houver novos
+const parametros = [
+  { key: 'triagem', label: 'Triagens', suffix: 'triagens' },
+]
 
 const cadencias = [
   { title: 'Diária', value: 'diaria' },
   { title: 'Semanal', value: 'semanal' },
 ]
 
-const loading = computed(() => projectsStore.loading || metasStore.loading)
+const projectItems = computed(() =>
+  projectsStore.active
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt'))
+    .map((p) => ({ title: p.name, value: p.id }))
+)
 
-function getMeta(projectId) {
-  return metasStore.metas.find((m) => m.projectId === projectId)
+const selectedProject = computed(() =>
+  projectsStore.active.find((p) => p.id === selectedProjectId.value)
+)
+
+function getMeta(paramKey) {
+  const meta = metasStore.metas.find((m) => m.projectId === selectedProjectId.value)
+  return meta?.[paramKey] ? meta : null
 }
 
 function initForm() {
-  projectsStore.active.forEach((project) => {
-    const meta = getMeta(project.id)
-    form[project.id] = {
+  parametros.forEach((param) => {
+    const meta = getMeta(param.key)
+    form[param.key] = {
       cadencia: meta?.cadencia || 'semanal',
-      triagem: meta?.triagem || null,
+      valor: meta?.[param.key] || null,
     }
   })
 }
 
-watch(() => projectsStore.active, initForm, { immediate: true })
+watch(selectedProjectId, initForm)
 watch(() => metasStore.metas, initForm)
 
 onMounted(async () => {
@@ -146,17 +183,18 @@ async function connect() {
   }
 }
 
-async function save(project) {
-  saving[project.id] = true
+async function salvar(param) {
+  if (!selectedProject.value || !form[param.key].valor) return
+  saving[param.key] = true
   try {
     await metasStore.saveMeta(
-      project.id,
-      project.name,
-      form[project.id].cadencia,
-      form[project.id].triagem
+      selectedProject.value.id,
+      selectedProject.value.name,
+      form[param.key].cadencia,
+      param.key === 'triagem' ? form[param.key].valor : 0
     )
   } finally {
-    saving[project.id] = false
+    saving[param.key] = false
   }
 }
 </script>
